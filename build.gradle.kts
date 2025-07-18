@@ -10,6 +10,9 @@ repositories {
 }
 
 dependencies {
+    // Ktor
+    implementation("io.ktor:ktor-server-core-jvm:2.3.12")
+
     // Kotlin Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.8.0") // For Dispatchers.IO etc.
@@ -22,8 +25,8 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.0")
 
     // For SLF4J (logging for Kafka client)
-    // IMPORTANT: For production, use a proper logging backend like logback or log4j2
-    implementation("org.slf4j:slf4j-simple:2.0.12")
+    // Logging
+    implementation("ch.qos.logback:logback-classic:1.5.6")
 
     // For Redis client (Lettuce) - simplified for example purposes
     // In a real application, you'd configure this properly.

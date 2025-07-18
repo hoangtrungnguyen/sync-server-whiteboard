@@ -1,0 +1,21 @@
+<configuration>
+    <!-- This sends all log output to the console -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+      This is the key part.
+      It tells Logback to only show logs from the Kafka client library
+      that are at the WARN level or higher (WARN, ERROR).
+      This will hide all the INFO and DEBUG messages.
+    -->
+    <logger name="org.apache.kafka" level="WARN"/>
+
+    <!-- This sets the default logging level for all other parts of your application -->
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
