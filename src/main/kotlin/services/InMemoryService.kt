@@ -7,7 +7,8 @@ import org.example.domain.models.WhiteBoard
 import java.util.concurrent.ConcurrentHashMap
 
 
-object InMemoryService {
+class InMemoryService(
+) {
     private val whiteboardStates = ConcurrentHashMap<String, WhiteBoard>()
 
     fun getAllWhiteboards(): List<WhiteBoard> {
@@ -31,7 +32,7 @@ object InMemoryService {
             )
         )
 
-        var currentWhiteboard = whiteboardStates[whiteboardId]!!
+        val currentWhiteboard = whiteboardStates[whiteboardId]!!
         whiteboardStates[whiteboardId] = currentWhiteboard.copy(
             version = currentWhiteboard.version + 1
         )

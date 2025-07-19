@@ -18,7 +18,7 @@ fun Application.module() {
 
     val dbService = DbPersistenceService
     val transformService = TransformService()
-    val inMemoryService = InMemoryService
+    val inMemoryService = InMemoryService()
 
     val kafkaPartitionProcessor = KafkaPartitionProcessor(
         inMemoryService,

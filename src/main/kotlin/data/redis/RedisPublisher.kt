@@ -13,4 +13,9 @@ object RedisPublisher {
         println("[Redis] Publishing transformed operation '${operation.operationId}' for whiteboard '${operation.whiteboardId}'")
         delay(Random.nextLong(10, 50)) // Simulate Redis network latency
     }
+
+    suspend fun mockPublish() {
+        println("🌬️🔥 ✅✅✅ [Redis] Publishing transformed operation")
+        delay(Random.nextLong(10, 50))
+    }
 }

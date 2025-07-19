@@ -49,6 +49,7 @@ class KafkaConsumerManager(
                 val records = consumer.poll(Duration.ofMillis(500))
                 if (!records.isEmpty) {
                     println("Polled ${records.count()} records.")
+
                     records.partitions().forEach { partition ->
                         val partitionRecords = records.records(partition)
                         processor.submit(partition, partitionRecords)

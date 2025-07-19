@@ -29,10 +29,7 @@ object DbPersistenceService {
             return false
         }
 
-        ops.forEach { op ->
-            operations[operationIdCounter.incrementAndGet()] = op // Add to simulated table
-        }
-        println("[Persistence DB] Successfully saved batch of ${ops.size} operations.")
+        println("💽💾 ✅✅✅ [Persistence DB] Successfully saved batch of ${ops.size} operations.")
         return true
     }
 

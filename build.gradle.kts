@@ -7,11 +7,16 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("https://packages.confluent.io/maven")
+        name = "confluence"
+    }
 }
 
 dependencies {
     // Ktor
     implementation("io.ktor:ktor-server-core-jvm:2.3.12")
+    implementation("io.ktor:ktor-server-netty-jvm:2.3.12")
 
     // Kotlin Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
@@ -31,6 +36,9 @@ dependencies {
     // For Redis client (Lettuce) - simplified for example purposes
     // In a real application, you'd configure this properly.
     implementation("io.lettuce:lettuce-core:6.3.2.RELEASE")
+
+    //recommend by JetBrain
+//    implementation("io.github.flaxoos:ktor-server-kafka:1.2.10")
 
     // Test dependencies (optional)
     testImplementation(kotlin("test"))

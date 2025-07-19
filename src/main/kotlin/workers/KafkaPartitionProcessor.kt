@@ -1,14 +1,14 @@
 package org.example.workers
 
 import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
+import org.example.data.redis.RedisPublisher
 import org.example.services.DbPersistenceService
 import org.example.services.InMemoryService
 import org.example.services.TransformService
 import org.example.workers.dbPersistence.DbPersistenceWorker
+import org.example.workers.inMemory.InMemoryWorker
 import java.util.concurrent.ConcurrentHashMap
 
 class KafkaPartitionProcessor(
@@ -16,35 +16,34 @@ class KafkaPartitionProcessor(
     private val dbService: DbPersistenceService,
     private val transformService: TransformService,
 ) {
-    private val processorScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val partitionMutexes = ConcurrentHashMap<TopicPartition, Mutex>()
-
+    private val partitionScopePool = ConcurrentHashMap<TopicPartition, CoroutineScope>()
     private val dbWorkers = ConcurrentHashMap<TopicPartition, DbPersistenceWorker>()
+    private val inMemoryWorkers = ConcurrentHashMap<TopicPartition, InMemoryWorker>()
 
     fun submit(partition: TopicPartition, records: List<ConsumerRecord<String, String>>) {
-        val mutex = partitionMutexes.computeIfAbsent(partition) { Mutex() }
-        // Get or create the dedicated worker for this partition.
+        val partitionScope =
+            partitionScopePool.computeIfAbsent(partition) { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
+
         val dbWorker = dbWorkers.computeIfAbsent(partition) {
-            DbPersistenceWorker(it, dbService, transformService).also { worker ->
-                worker.start() // Start its background processing loop.
-            }
+            DbPersistenceWorker(partitionScope, it, dbService, transformService)
         }
-        processorScope.launch {
-            mutex.withLock {
-                // For the in-memory view, iterate and launch a separate coroutine for each record.
-                // This allows for immediate processing of each message for the UI/client without waiting for the batch.
-                records.forEach { record ->
 
-                    dbWorker.submitRecord(record)
-
-                    launch(Dispatchers.Default) {
-                        val whiteboardId = record.key() ?: "unknown-${partition.partition()}"
-                        "State from offset ${record.offset()}"
-                        val message = record.value()
-                        inMemoryService.updateWhiteboardState(whiteboardId, message)
-                        println("QUERY worker for partition [${partition.partition()}] processed single record at offset ${record.offset()}.")
+        val inMemoryWorker = inMemoryWorkers.computeIfAbsent(partition) {
+            InMemoryWorker(partitionScope, partition, inMemoryService, transformService, RedisPublisher) {
+                if (it.isNotEmpty()) {
+                    partitionScope.launch {
+                        dbWorker.proceedBatch(it)
                     }
                 }
+            }.also {
+                it.start()
+            }
+        }
+
+        partitionScope.launch {
+            val batch = inMemoryWorker.proceedRecords(records)
+            if (batch.isNotEmpty()) {
+                dbWorker.proceedBatch(batch)
             }
         }
     }
@@ -55,7 +54,14 @@ class KafkaPartitionProcessor(
         dbWorkers.values.forEach { it.shutdown() }
         dbWorkers.clear()
 
-        processorScope.cancel() // This cancels all running coroutines.
+        inMemoryWorkers.values.forEach { it.shutdown() }
+        inMemoryWorkers.clear()
+
+        partitionScopePool.values.forEach {
+            it.cancel()
+        }
+        partitionScopePool.clear()
+
         println("All partition processors shut down.")
     }
 }
